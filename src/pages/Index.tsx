@@ -1,13 +1,31 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import React from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { AuthPage } from '../components/Auth/AuthPage';
+import { AppLayout } from '../components/Layout/AppLayout';
+import { PWAInstallPrompt } from '../components/App/PWAInstallPrompt';
+import { Loader2 } from 'lucide-react';
 
 const Index = () => {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <h2 className="text-lg font-medium mb-2">Loading TaskSync</h2>
+          <p className="text-muted-foreground">Please wait...</p>
+        </div>
       </div>
-    </div>
+    );
+  }
+
+  return (
+    <>
+      {user ? <AppLayout /> : <AuthPage />}
+      <PWAInstallPrompt />
+    </>
   );
 };
 
