@@ -125,11 +125,11 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
                     </Badge>
                   )}
                   
-                  <div className="flex items-center">
+                  <div className="flex items-center" title={task.synced ? "Synced" : "Pending sync"}>
                     {task.synced ? (
-                      <Wifi className="h-3 w-3 text-green-500" title="Synced" />
+                      <Wifi className="h-3 w-3 text-green-500" />
                     ) : (
-                      <WifiOff className="h-3 w-3 text-orange-500" title="Pending sync" />
+                      <WifiOff className="h-3 w-3 text-orange-500" />
                     )}
                   </div>
                 </div>
