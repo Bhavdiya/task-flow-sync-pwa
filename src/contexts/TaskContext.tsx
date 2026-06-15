@@ -8,7 +8,7 @@ import { toast } from '@/hooks/use-toast';
 interface TaskContextType {
   tasks: TaskType[];
   loading: boolean;
-  createTask: (title: string, description?: string) => Promise<void>;
+  createTask: (title: string, description?: string, category?: string, dueDate?: string) => Promise<void>;
   updateTask: (taskId: string, updates: Partial<TaskType>) => Promise<void>;
   deleteTask: (taskId: string) => Promise<void>;
   toggleTask: (taskId: string) => Promise<void>;
@@ -34,16 +34,7 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (user) {
-      loadTasks();
-    } else {
-      setTasks([]);
-      setLoading(false);
-    }
-  }, [user]);
-
-  const loadTasks = async () => {
+  const loadTasks = React.useCallback(async () => {
     if (!user) return;
     
     try {
@@ -62,9 +53,18 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const createTask = async (title: string, description: string = '') => {
+  useEffect(() => {
+    if (user) {
+      loadTasks();
+    } else {
+      setTasks([]);
+      setLoading(false);
+    }
+  }, [user, loadTasks]);
+
+  const createTask = async (title: string, description: string = '', category?: string, dueDate?: string) => {
     if (!user) return;
 
     try {
@@ -76,7 +76,9 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         userId: user.id,
-        synced: false
+        synced: false,
+        category,
+        dueDate
       };
 
       await dbManager.addTask(newTask);

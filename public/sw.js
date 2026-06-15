@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'tasksync-v1';
+const CACHE_NAME = 'tasksync-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

@@ -1,21 +1,9 @@
-
 import React, { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Edit2, 
-  Trash2, 
-  Calendar, 
-  Clock,
-  Wifi,
-  WifiOff
-} from 'lucide-react';
+import { Edit2, Trash2 } from 'lucide-react';
 import { type Task } from '../../utils/indexedDB';
 import { useTask } from '../../contexts/TaskContext';
 import { TaskEditDialog } from './TaskEditDialog';
-import { format } from 'date-fns';
 
 interface TaskItemProps {
   task: Task;
@@ -35,109 +23,90 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    try {
-      return format(new Date(dateString), 'MMM d, yyyy');
-    } catch {
-      return 'Invalid date';
-    }
+  const formatTime = (timeStr?: string) => {
+    if (!timeStr) return '';
+    // timeStr is expected to be "HH:mm" from input type="time"
+    const [h, m] = timeStr.split(':');
+    if (!h || !m) return timeStr;
+    const hour = parseInt(h, 10);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const formattedHour = hour % 12 || 12;
+    return `${formattedHour}:${m} ${ampm}`;
   };
 
-  const formatTime = (dateString: string) => {
-    try {
-      return format(new Date(dateString), 'h:mm a');
-    } catch {
-      return 'Invalid time';
+  const getCategoryColor = (category?: string) => {
+    switch (category) {
+      case 'Design': return 'bg-purple-50 text-purple-600';
+      case 'Development': return 'bg-blue-50 text-blue-600';
+      case 'Docs': return 'bg-emerald-50 text-emerald-600';
+      case 'Meeting': return 'bg-fuchsia-50 text-fuchsia-600';
+      default: return 'bg-gray-50 text-gray-600';
     }
   };
 
   return (
     <>
-      <Card className={`transition-all duration-200 hover:shadow-md ${
-        task.completed ? 'opacity-75 bg-muted/50' : 'bg-card'
+      <div className={`group flex items-center justify-between p-3 rounded-xl transition-all hover:bg-slate-50 ${
+        task.completed ? 'opacity-60' : ''
       }`}>
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3">
-            <Checkbox
-              checked={task.completed}
-              onCheckedChange={handleToggle}
-              className="mt-1 flex-shrink-0"
-            />
+        <div className="flex items-center gap-4 flex-1">
+          {/* Circular Checkbox */}
+          <button 
+            onClick={handleToggle}
+            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+              task.completed 
+                ? 'bg-blue-500 border-blue-500' 
+                : 'border-slate-300 hover:border-blue-500'
+            }`}
+          >
+            {task.completed && (
+              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+          </button>
+          
+          <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-3 flex-1 min-w-0">
+            <h3 className={`font-medium text-slate-700 truncate ${
+              task.completed ? 'line-through text-slate-400' : ''
+            }`}>
+              {task.title}
+            </h3>
             
-            <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <h3 className={`font-medium text-base leading-5 ${
-                    task.completed ? 'line-through text-muted-foreground' : 'text-foreground'
-                  }`}>
-                    {task.title}
-                  </h3>
-                  
-                  {task.description && (
-                    <p className={`text-sm mt-1 leading-4 ${
-                      task.completed ? 'line-through text-muted-foreground' : 'text-muted-foreground'
-                    }`}>
-                      {task.description}
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setIsEditOpen(true)}
-                    className="h-8 w-8 p-0"
-                  >
-                    <Edit2 className="h-4 w-4" />
-                  </Button>
-                  
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleDelete}
-                    className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between mt-3">
-                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    <span>{formatDate(task.createdAt)}</span>
-                  </div>
-                  
-                  {task.updatedAt !== task.createdAt && (
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      <span>Updated {formatTime(task.updatedAt)}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {task.completed && (
-                    <Badge variant="secondary" className="text-xs">
-                      Complete
-                    </Badge>
-                  )}
-                  
-                  <div className="flex items-center" title={task.synced ? "Synced" : "Pending sync"}>
-                    {task.synced ? (
-                      <Wifi className="h-3 w-3 text-green-500" />
-                    ) : (
-                      <WifiOff className="h-3 w-3 text-orange-500" />
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
+            {task.category && (
+              <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium w-fit ${getCategoryColor(task.category)}`}>
+                {task.category}
+              </span>
+            )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+
+        <div className="flex items-center gap-3 pl-4 flex-shrink-0">
+          <span className="text-xs text-slate-400 font-medium">
+            {formatTime(task.dueDate)}
+          </span>
+          
+          <div className="hidden group-hover:flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsEditOpen(true)}
+              className="h-8 w-8 text-slate-400 hover:text-slate-700"
+            >
+              <Edit2 className="h-4 w-4" />
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleDelete}
+              className="h-8 w-8 text-slate-400 hover:text-red-600"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
 
       <TaskEditDialog
         task={task}

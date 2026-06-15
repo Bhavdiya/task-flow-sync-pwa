@@ -1,48 +1,37 @@
-
 import React, { useState } from 'react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Search, 
-  Filter, 
-  CheckSquare, 
-  Square, 
-  RefreshCw,
-  Inbox
-} from 'lucide-react';
 import { TaskItem } from './TaskItem';
 import { TaskCreateDialog } from './TaskCreateDialog';
 import { useTask } from '../../contexts/TaskContext';
-import { type Task } from '../../utils/indexedDB';
+import { ClipboardList, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-export const TaskList: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState('');
+interface TaskListProps {
+  viewMode?: 'dashboard' | 'tasks';
+}
+
+export const TaskList: React.FC<TaskListProps> = ({ viewMode = 'tasks' }) => {
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
-  const { tasks, loading, refreshTasks } = useTask();
+  const { tasks, loading } = useTask();
 
   const filteredTasks = tasks.filter(task => {
-    const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         task.description.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesFilter = filter === 'all' || 
-                         (filter === 'active' && !task.completed) ||
-                         (filter === 'completed' && task.completed);
-    
-    return matchesSearch && matchesFilter;
+    if (filter === 'all') return true;
+    if (filter === 'active') return !task.completed;
+    if (filter === 'completed') return task.completed;
+    return true;
   });
 
-  const taskCounts = {
+  const stats = {
     total: tasks.length,
     active: tasks.filter(t => !t.completed).length,
-    completed: tasks.filter(t => t.completed).length
+    completed: tasks.filter(t => t.completed).length,
+    overdue: tasks.filter(t => !t.completed && t.dueDate && t.dueDate < new Date().toTimeString().substring(0, 5)).length,
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="flex items-center gap-2">
-          <RefreshCw className="h-5 w-5 animate-spin" />
+      <div className="flex items-center justify-center p-8 h-full">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Clock className="h-5 w-5 animate-spin" />
           <span>Loading tasks...</span>
         </div>
       </div>
@@ -50,104 +39,104 @@ export const TaskList: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 flex flex-col">
-      {/* Search and Filter Bar */}
-      <div className="p-4 space-y-4 bg-background border-b">
-        <div className="relative">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search tasks..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+    <div className="flex flex-col h-full bg-slate-50 p-4 md:p-8">
+      
+      {/* Dashboard Stats (Only in dashboard view) */}
+      {viewMode === 'dashboard' && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <StatCard title="All Tasks" value={stats.total} icon={ClipboardList} iconColor="text-blue-500" bgColor="bg-blue-50" />
+          <StatCard title="In Progress" value={stats.active} icon={Clock} iconColor="text-orange-500" bgColor="bg-orange-50" />
+          <StatCard title="Completed" value={stats.completed} icon={CheckCircle2} iconColor="text-green-500" bgColor="bg-green-50" />
+          <StatCard title="Overdue" value={stats.overdue} icon={AlertCircle} iconColor="text-red-500" bgColor="bg-red-50" />
+        </div>
+      )}
+
+      {/* Main Content Area */}
+      <div className="flex-1 bg-white rounded-2xl shadow-sm border p-4 md:p-6 overflow-hidden flex flex-col">
+        
+        {/* Header/Tabs */}
+        <div className="flex items-center justify-between mb-6">
+          {viewMode === 'dashboard' ? (
+            <h2 className="text-lg font-bold text-slate-800">Today</h2>
+          ) : (
+            <div className="flex space-x-6 border-b w-full">
+              <TabButton active={filter === 'all'} onClick={() => setFilter('all')}>All</TabButton>
+              <TabButton active={filter === 'active'} onClick={() => setFilter('active')}>In Progress</TabButton>
+              <TabButton active={filter === 'completed'} onClick={() => setFilter('completed')}>Completed</TabButton>
+            </div>
+          )}
+        </div>
+
+        {/* Task List */}
+        <div className="flex-1 overflow-y-auto space-y-2 pr-2">
+          {filteredTasks.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-48 text-center">
+              <p className="text-slate-400 font-medium">No tasks found</p>
+              <p className="text-sm text-slate-400 mt-1">Get started by creating a new task.</p>
+            </div>
+          ) : (
+            filteredTasks.map((task) => (
+              <TaskItem key={task.id} task={task} />
+            ))
+          )}
         </div>
         
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <div className="flex gap-1">
-              <Button
-                variant={filter === 'all' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setFilter('all')}
-                className="h-8"
-              >
-                All ({taskCounts.total})
-              </Button>
-              <Button
-                variant={filter === 'active' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setFilter('active')}
-                className="h-8"
-              >
-                <Square className="h-3 w-3 mr-1" />
-                Active ({taskCounts.active})
-              </Button>
-              <Button
-                variant={filter === 'completed' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setFilter('completed')}
-                className="h-8"
-              >
-                <CheckSquare className="h-3 w-3 mr-1" />
-                Done ({taskCounts.completed})
-              </Button>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={refreshTasks}
-              className="h-8"
-            >
-              <RefreshCw className="h-3 w-3 mr-1" />
-              Refresh
-            </Button>
-            <div className="hidden md:block">
-              <TaskCreateDialog />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Task List */}
-      <div className="flex-1 overflow-y-auto">
-        {filteredTasks.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-8 text-center">
-            <Inbox className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium text-muted-foreground mb-2">
-              {searchTerm ? 'No matching tasks' : 
-               filter === 'completed' ? 'No completed tasks' :
-               filter === 'active' ? 'No active tasks' : 'No tasks yet'}
-            </h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              {searchTerm ? 'Try adjusting your search terms' :
-               filter === 'completed' ? 'Complete some tasks to see them here' :
-               filter === 'active' ? 'All your tasks are completed!' :
-               'Create your first task to get started'}
-            </p>
-            {!searchTerm && filter === 'all' && (
-              <div className="md:hidden">
-                <TaskCreateDialog />
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="p-4 space-y-3">
-            {filteredTasks.map((task) => (
-              <TaskItem key={task.id} task={task} />
-            ))}
+        {viewMode === 'dashboard' && (
+          <div className="mt-4 pt-4 border-t">
+            <button className="text-blue-600 text-sm font-medium hover:underline">
+              View all tasks →
+            </button>
           </div>
         )}
       </div>
 
-      {/* Mobile FAB */}
-      <div className="md:hidden">
-        <TaskCreateDialog />
-      </div>
+      {/* Floating Action Button */}
+      <TaskCreateDialog />
     </div>
   );
 };
+
+interface StatCardProps {
+  title: string;
+  value: number;
+  icon: React.ElementType;
+  iconColor: string;
+  bgColor: string;
+}
+
+function StatCard({ title, value, icon: Icon, iconColor, bgColor }: StatCardProps) {
+  return (
+    <div className="bg-white p-4 rounded-2xl shadow-sm border flex items-center justify-between">
+      <div>
+        <div className="text-2xl font-bold text-slate-800">{value}</div>
+        <div className="text-xs font-medium text-slate-500 mt-1">{title}</div>
+      </div>
+      <div className={`p-3 rounded-full ${bgColor}`}>
+        <Icon className={`w-6 h-6 ${iconColor}`} />
+      </div>
+    </div>
+  );
+}
+
+interface TabButtonProps {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}
+
+function TabButton({ active, onClick, children }: TabButtonProps) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "pb-3 text-sm font-medium transition-colors relative",
+        active ? "text-blue-600" : "text-slate-500 hover:text-slate-800"
+      )}
+    >
+      {children}
+      {active && (
+        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-t-full" />
+      )}
+    </button>
+  );
+}

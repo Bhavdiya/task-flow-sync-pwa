@@ -21,6 +21,8 @@ export const TaskCreateDialog: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('Design');
+  const [dueDate, setDueDate] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { createTask } = useTask();
 
@@ -39,11 +41,13 @@ export const TaskCreateDialog: React.FC = () => {
     setIsLoading(true);
     
     try {
-      await createTask(title.trim(), description.trim());
+      await createTask(title.trim(), description.trim(), category, dueDate);
       
       // Reset form
       setTitle('');
       setDescription('');
+      setCategory('Design');
+      setDueDate('');
       setOpen(false);
     } catch (error) {
       toast({
@@ -60,6 +64,8 @@ export const TaskCreateDialog: React.FC = () => {
     if (!isLoading) {
       setTitle('');
       setDescription('');
+      setCategory('Design');
+      setDueDate('');
       setOpen(false);
     }
   };
@@ -105,6 +111,35 @@ export const TaskCreateDialog: React.FC = () => {
                 disabled={isLoading}
                 rows={3}
               />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="new-category">Category</Label>
+                <select
+                  id="new-category"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={isLoading}
+                >
+                  <option value="Design">Design</option>
+                  <option value="Development">Development</option>
+                  <option value="Docs">Docs</option>
+                  <option value="Meeting">Meeting</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="new-dueDate">Time</Label>
+                <Input
+                  id="new-dueDate"
+                  type="time"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  disabled={isLoading}
+                />
+              </div>
             </div>
           </div>
           

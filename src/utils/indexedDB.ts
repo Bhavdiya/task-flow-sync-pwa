@@ -1,5 +1,4 @@
-
-interface Task {
+export interface Task {
   id: string;
   title: string;
   description: string;
@@ -9,9 +8,18 @@ interface Task {
   userId: string;
   synced: boolean;
   deleted?: boolean;
+  category?: string;
+  dueDate?: string;
 }
 
-interface User {
+export interface SyncQueueItem {
+  id?: number;
+  action: string;
+  data: unknown;
+  timestamp: string;
+}
+
+export interface User {
   id: string;
   email: string;
   name: string;
@@ -118,7 +126,7 @@ class IndexedDBManager {
     });
   }
 
-  async addToSyncQueue(action: string, data: any): Promise<void> {
+  async addToSyncQueue(action: string, data: unknown): Promise<void> {
     if (!this.db) throw new Error('Database not initialized');
     
     const transaction = this.db.transaction(['syncQueue'], 'readwrite');
@@ -130,7 +138,7 @@ class IndexedDBManager {
     });
   }
 
-  async getSyncQueue(): Promise<any[]> {
+  async getSyncQueue(): Promise<SyncQueueItem[]> {
     if (!this.db) throw new Error('Database not initialized');
     
     return new Promise((resolve, reject) => {
